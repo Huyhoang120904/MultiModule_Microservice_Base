@@ -12,3 +12,9 @@ spring:
         initial-interval: 1000
         max-interval: 2000
         multiplier: 1.1
+
+# JWT Configuration (fallback - should be configured in config-server)
+jwt:
+  secret: ${JWT_SECRET:TGhpcyBpcyBhIHRlbXBvcmFyeSBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IC0gcGxlYXNlIHVzZSBhIHNlY3VyZSBzZWNyZXQgaW4gcHJvZHVjdGlvbg==}
+  access-token-expiration: 3600000  # 1 hour
+  refresh-token-expiration: 604800000  # 7 days

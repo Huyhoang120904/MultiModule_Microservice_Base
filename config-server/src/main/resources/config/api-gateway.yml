@@ -15,49 +15,49 @@ spring:
               enabled: true
               lower-case-service-id: true
           routes:
-            # User Service Routes
-            - id: user-service
-              uri: lb://user-service
-              predicates:
-                - Path=/user/**
-              filters:
-                - StripPrefix=1
-                - name: CircuitBreaker
-                  args:
-                    name: userServiceCircuitBreaker
-                    fallbackUri: forward:/fallback/user-service
-
-            # Auth Service Routes
+            # Auth Service Routes (Public - no JWT required)
             - id: auth-service
               uri: lb://auth-service
               predicates:
-                - Path=/auth/**
+                - Path=/api/auth/**
               filters:
-                - StripPrefix=1
+                - RewritePath=/api/auth/(?<segment>.*), /auth/${segment}
                 - name: CircuitBreaker
                   args:
                     name: authServiceCircuitBreaker
                     fallbackUri: forward:/fallback/auth-service
 
-            # Message Service Routes
+            # User Service Routes (Protected - JWT required)
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - RewritePath=/api/users/(?<segment>.*), /users/${segment}
+                - name: CircuitBreaker
+                  args:
+                    name: userServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/user-service
+
+            # Message Service Routes (Protected - JWT required)
             - id: message-service
               uri: lb://message-service
               predicates:
-                - Path=/message/**
+                - Path=/api/messages/**
               filters:
-                - StripPrefix=1
+                - RewritePath=/api/messages/(?<segment>.*), /messages/${segment}
                 - name: CircuitBreaker
                   args:
                     name: messageServiceCircuitBreaker
                     fallbackUri: forward:/fallback/message-service
 
-            # Notification Service Routes
+            # Notification Service Routes (Protected - JWT required)
             - id: notification-service
               uri: lb://notification-service
               predicates:
-                - Path=/notification/**
+                - Path=/api/notifications/**
               filters:
-                - StripPrefix=1
+                - RewritePath=/api/notifications/(?<segment>.*), /notifications/${segment}
                 - name: CircuitBreaker
                   args:
                     name: notificationServiceCircuitBreaker
@@ -84,6 +84,12 @@ spring:
           # Default filters
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:TGhpcyBpcyBhIHRlbXBvcmFyeSBzZWNyZXQga2V5IGZvciBkZXZlbG9wbWVudCBvbmx5IC0gcGxlYXNlIHVzZSBhIHNlY3VyZSBzZWNyZXQgaW4gcHJvZHVjdGlvbg==}
+  access-token-expiration: 3600000  # 1 hour in milliseconds
+  refresh-token-expiration: 604800000  # 7 days in milliseconds
 
 # Eureka Client Configuration
 eureka:
@@ -183,3 +189,23 @@ logging:
       max-file-size: 10MB
       max-history: 30
       total-size-cap: 1GB
+
+#API docs
+springdoc:
+  swagger-ui:
+    # This disables the default "petstore" url
+    disable-swagger-default-url: true
+    # Aggregates the docs from your services via Eureka discovery
+    urls:
+      - name: Auth Service
+        url: http://localhost:8084/v3/api-docs
+      - name: User Service
+        url: http://localhost:8081/v3/api-docs
+      - name: Message Service
+        url: http://localhost:8082/v3/api-docs
+      - name: Notification Service
+        url: http://localhost:8083/v3/api-docs
+  api-docs:
+    enabled: true
+    # This is the path for the Gateway's OWN docs (if any)
+    path: /v3/api-docs
